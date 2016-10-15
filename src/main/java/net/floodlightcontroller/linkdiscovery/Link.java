@@ -37,6 +37,7 @@ public class Link implements Comparable<Link> {
 
     public Link(DatapathId srcId, OFPort srcPort, DatapathId dstId, OFPort dstPort, U64 latency) {
         this.src = srcId;
+
         this.srcPort = srcPort;
         this.dst = dstId;
         this.dstPort = dstPort;
