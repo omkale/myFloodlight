@@ -13,8 +13,12 @@ import org.sdnplatform.sync.ISyncService;
 import org.sdnplatform.sync.ISyncService.Scope;
 import org.sdnplatform.sync.error.SyncException;
 import org.sdnplatform.sync.internal.rpc.IRPCListener;
+import org.sdnplatform.sync.internal.store.JacksonStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
@@ -31,7 +35,9 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	protected static IStoreClient<String, JSONObject> storeLD;
 	protected static IFloodlightProviderService floodlightProvider;
 	private String controllerId;
-
+	//ObjectMapper mapper = new ObjectMapper();
+	
+	
 	public LDSyncAdapter(){
 		
 	}
@@ -41,7 +47,10 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 		// TODO Auto-generated method stub
 		try {
 			Integer i = new Integer(0);
-			for (JSONObject update: updates){
+			for (JSONObject update: updates){				
+				//String jsonInString = mapper.writeValueAsString(update);
+				//JSONObject jsonSerialize = mapper.readValue(jsonInString, JSONObject.class);
+				//jStore.put((controllerId+i.toString()), update);
 				LDSyncAdapter.storeLD.put((controllerId+i.toString()), update);
 				logger.info("+++++++++++++ Retrieving from DB: CID:{}, Update:{}", 
 	                    new Object[] {
