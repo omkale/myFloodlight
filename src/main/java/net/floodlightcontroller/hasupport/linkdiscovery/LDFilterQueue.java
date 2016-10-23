@@ -3,12 +3,10 @@ package net.floodlightcontroller.hasupport.linkdiscovery;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.json.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,30 +17,33 @@ public class LDFilterQueue implements IFilterQueue {
 	protected static Logger logger = LoggerFactory.getLogger(LDFilterQueue.class);
 	private static final LDSyncAdapter syncAdapter = new LDSyncAdapter();
 	
-	LinkedBlockingQueue<JSONObject> filterQueue = new LinkedBlockingQueue<>();
-	MessageDigest mdEnc;
-	HashMap<String, JSONObject> myMap = new HashMap<String, JSONObject>();
+	LinkedBlockingQueue<String> filterQueue = new LinkedBlockingQueue<>();
+	HashMap<String, String> myMap = new HashMap<String, String>();
 	
 
 	@Override
-	public boolean enqueueForward(JSONObject value) {
+	public boolean enqueueForward(String value) {
 		// TODO Auto-generated method stub
 		try {
-			this.mdEnc = MessageDigest.getInstance("MD5");
-			this.mdEnc.digest(value.toString().getBytes());
-			String md5 = new BigInteger(1, this.mdEnc.digest()).toString(16);
+			MessageDigest m = MessageDigest.getInstance("MD5");
+			m.reset();
+			m.update(value.getBytes());
+			byte[] digest = m.digest();
+			BigInteger bigInt = new BigInteger(1,digest);
+			String md5 = bigInt.toString(16);
 			logger.info("[FilterQ] The MD5: {} The Value {}", new Object [] {md5,value});
 			if( (!myMap.containsKey(md5)) && (!value.equals(null)) ){
 				filterQueue.offer(value);
 				myMap.put(md5, value);
 			}
 			return true;
-		} catch (NoSuchAlgorithmException nae) {
-			// TODO Auto-generated catch block
-			logger.info("[FilterQ] No such algorithm MD5!");
-			nae.printStackTrace();
-			return false;
-		} catch (Exception e){
+	
+		} 
+		catch (java.security.NoSuchAlgorithmException e1) {
+            e1.printStackTrace();
+            return false;
+        }
+		catch (Exception e){
 			logger.info("[FilterQ] Exception: enqueueFwd!");
 			e.printStackTrace();
 			return false;
@@ -53,7 +54,7 @@ public class LDFilterQueue implements IFilterQueue {
 	public boolean dequeueForward() {
 		// TODO Auto-generated method stub
 		try {
-			ArrayList<JSONObject> LDupds = new ArrayList<JSONObject>();
+			ArrayList<String> LDupds = new ArrayList<String>();
 			if( !filterQueue.isEmpty() ){
 				filterQueue.drainTo(LDupds);
 			}
@@ -74,7 +75,7 @@ public class LDFilterQueue implements IFilterQueue {
 	}
 
 	@Override
-	public boolean enqueueReverse(JSONObject value) {
+	public boolean enqueueReverse(String value) {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -84,6 +85,7 @@ public class LDFilterQueue implements IFilterQueue {
 		// TODO Auto-generated method stub
 		return false;
 	}
+
 	
 
 }

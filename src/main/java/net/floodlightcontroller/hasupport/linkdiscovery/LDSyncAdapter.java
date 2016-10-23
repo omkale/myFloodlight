@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONObject;
 import org.sdnplatform.sync.IStoreClient;
 import org.sdnplatform.sync.IStoreListener;
 import org.sdnplatform.sync.ISyncService;
@@ -17,8 +16,6 @@ import org.sdnplatform.sync.internal.store.JacksonStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
@@ -32,10 +29,9 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 
 	protected static Logger logger = LoggerFactory.getLogger(LDSyncAdapter.class);
 	protected static ISyncService syncService;
-	protected static IStoreClient<String, JSONObject> storeLD;
+	protected static IStoreClient<String, String> storeLD;
 	protected static IFloodlightProviderService floodlightProvider;
 	private String controllerId;
-	//ObjectMapper mapper = new ObjectMapper();
 	
 	
 	public LDSyncAdapter(){
@@ -43,14 +39,11 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	}
 
 	@Override
-	public void packJSON(List<JSONObject> updates) {
+	public void packJSON(List<String> updates) {
 		// TODO Auto-generated method stub
 		try {
 			Integer i = new Integer(0);
-			for (JSONObject update: updates){				
-				//String jsonInString = mapper.writeValueAsString(update);
-				//JSONObject jsonSerialize = mapper.readValue(jsonInString, JSONObject.class);
-				//jStore.put((controllerId+i.toString()), update);
+			for (String update: updates){	
 				LDSyncAdapter.storeLD.put((controllerId+i.toString()), update);
 				logger.info("+++++++++++++ Retrieving from DB: CID:{}, Update:{}", 
 	                    new Object[] {
@@ -114,12 +107,11 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
             LDSyncAdapter.storeLD = LDSyncAdapter.syncService
             		.getStoreClient("LDUpdates", 
             				String.class, 
-            				JSONObject.class);
+            				String.class);
             LDSyncAdapter.storeLD.addStoreListener(this);
         } catch (SyncException e) {
             throw new FloodlightModuleException("Error while setting up sync service", e);
         }
-
 	}
 
 	@Override
@@ -128,17 +120,18 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 		while(keys.hasNext()){
 	        String k = keys.next();
 	        try {
-	            String value = storeLD.get(k).getValue().toString();
+	        	String val = storeLD.get(k).getValue();
+	            //JSONObject val = new JSONObject(serzVal);
 				logger.info("+++++++++++++ Retriving value from DB: Key:{}, Value:{}, Type: {}", 
 	                    new Object[] {
-	                            k, 
-	                            value, 
+	                            k.toString(), 
+	                            val.toString(), 
 	                            type.name()
 	                        }
 	                    );
 	            if(type.name().equals("REMOTE")){
-	                String info = value;
-	                logger.info("++++++++++++++++ REMOTE: Key:{}, Value:{}", k, info);
+	              //  String info = value;
+	               // logger.info("++++++++++++++++ REMOTE: Key:{}, Value:{}", k, info);
 	            }
 	        } catch (SyncException e) {
 	            e.printStackTrace();

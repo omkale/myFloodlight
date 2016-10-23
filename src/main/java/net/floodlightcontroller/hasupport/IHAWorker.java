@@ -9,7 +9,7 @@ public interface IHAWorker extends IFloodlightModule {
 	
 	public JSONObject getJSONObject(String controllerID);
 	
-	public JSONObject assembleUpdate();
+	public String assembleUpdate();
 	
 	public boolean publishHook();
 	

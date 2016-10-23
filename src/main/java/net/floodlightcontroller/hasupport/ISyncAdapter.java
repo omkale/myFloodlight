@@ -5,6 +5,6 @@ import org.json.*;
 
 public interface ISyncAdapter {
 	
-	public void packJSON(List<JSONObject> updates);
+	public void packJSON(List<String> updates);
 
 }

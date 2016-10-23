@@ -1,7 +1,6 @@
 package net.floodlightcontroller.hasupport.linkdiscovery;
 
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -14,10 +13,7 @@ import org.json.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
@@ -41,7 +37,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	List<String> synLDUList = Collections.synchronizedList(new ArrayList<String>());
 	protected static IThreadPoolService threadPoolService;
 	private static final LDFilterQueue myLDFilterQueue = new LDFilterQueue(); 
-	ObjectMapper mapper = new ObjectMapper();
+	
 	public LDHAWorker(){};
 	
 	@Override
@@ -50,32 +46,25 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	}
 
 	@Override
-	public JSONObject assembleUpdate() {
+	public String assembleUpdate() {
 		// TODO Auto-generated method stub
 		JSONObject myJson = new JSONObject();
-		Integer i=0;
-		//mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+		String jsonInString = null;
+		Integer i=0;	
 		for(String update : synLDUList){
-			String serzUpdate = null;			
+			ObjectMapper mapper = new ObjectMapper();
 			try {
-				serzUpdate = mapper.writeValueAsString(update);
-			} catch (JsonParseException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (JsonMappingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
+				jsonInString = mapper.writeValueAsString(update);
+			} catch (JsonProcessingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			String key = "field" + i.toString();
-			myJson.append(key, serzUpdate);
+			myJson.append(key, update);
 			i=i+1;
-		}
-		
+		}		
 		logger.info("MyJson: "+myJson.toString());
-		return myJson;
+		return jsonInString;
 	}
 
 
