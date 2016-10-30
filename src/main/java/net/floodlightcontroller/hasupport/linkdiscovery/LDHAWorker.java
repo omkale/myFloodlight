@@ -27,7 +27,12 @@ import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryListener;
 import net.floodlightcontroller.linkdiscovery.ILinkDiscoveryService;
 import net.floodlightcontroller.threadpool.IThreadPoolService;
 
-
+/**
+ * This is the Worker class used to publish, subscribe updates to
+ * and from the controller respectively
+ * @author Om Kale
+ *
+ */
 public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightModule, ILinkDiscoveryListener {
 	protected static Logger logger = LoggerFactory.getLogger(LDHAWorker.class);
 	protected static ILinkDiscoveryService linkserv;
@@ -44,7 +49,13 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	public JSONObject getJSONObject(String controllerId){
 		return new JSONObject();
 	}
-
+ 
+	/**
+	 * This function is used to assemble the LDupdates into
+	 * a JSON string using JSON Jackson API
+	 * @return JSON string
+	 */
+	
 	@Override
 	public String assembleUpdate() {
 		// TODO Auto-generated method stub
@@ -67,7 +78,10 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		return jsonInString;
 	}
 
-
+    /**
+     * This function is called in order to start pushing updates 
+     * into the syncDB
+     */
 	@Override
 	public boolean publishHook() {
 		// TODO Auto-generated method stub
@@ -103,11 +117,11 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	}
 
     /**
-     * This function is called by external users to push JSON objects 
-     * into 
+     * This function is called by external users to push JSON strings
+     * into the syncDB
      */
 	@Override
-	public void pushUpdates(JSONObject update) {
+	public void pushUpdates(String update) {
 		// TODO Auto-generated method stub
 		
 		

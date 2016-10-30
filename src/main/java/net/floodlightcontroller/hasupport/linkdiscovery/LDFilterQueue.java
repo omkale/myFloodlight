@@ -9,8 +9,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import net.floodlightcontroller.hasupport.IFilterQueue;
+
+/**
+ * A Queue to store LDupdates
+ * @author Om Kale
+ */
 
 public class LDFilterQueue implements IFilterQueue {
 	
@@ -20,10 +24,17 @@ public class LDFilterQueue implements IFilterQueue {
 	LinkedBlockingQueue<String> filterQueue = new LinkedBlockingQueue<>();
 	HashMap<String, String> myMap = new HashMap<String, String>();
 	
-
+    
+	
+	
+	/**
+	 * This function hashes the LDupdates received in form of json string 
+	 * using md5 hashing and store them in the filter queue and in a map 
+	 * if not already present
+	 */	 
+	
 	@Override
 	public boolean enqueueForward(String value) {
-		// TODO Auto-generated method stub
 		try {
 			MessageDigest m = MessageDigest.getInstance("MD5");
 			m.reset();
@@ -50,6 +61,12 @@ public class LDFilterQueue implements IFilterQueue {
 		}
 	}
 
+	/**
+	 * This function pushes the LDupdates from the filter 
+	 * queue into the syncAdapter
+	 */
+	
+	
 	@Override
 	public boolean dequeueForward() {
 		// TODO Auto-generated method stub
