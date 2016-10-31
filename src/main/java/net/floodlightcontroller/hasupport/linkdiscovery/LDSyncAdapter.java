@@ -100,6 +100,7 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	public void packJSON(List<String> updates) {
 		ObjectMapper myObj = new ObjectMapper();
 		try {
+			//put the entire json string into a map 
 			updateMap = (Map<String, String>)(myObj.readValue(updates.toString(), Map.class));			
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
@@ -116,21 +117,22 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
                         updateMap.keySet().toString()
                     });
 		String cmd5Hash = getCMD5Hash(updates.toString());
-		updateMap.put("cmd5", cmd5Hash);	
-		if(updateMap.get(highfields[0]) != null){
-			String latency = updateMap.get(highfields[0]);
-			List<String> latencyList = Arrays.asList(latency.split("\\s*,\\s*"));
-			latencyList.add(latency);
-			updateMap.put(highfields[0], latencyList.toString());
-			String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-			updateMap.put("timestamp",timeStamp);
-		}
-			
+		updateMap.put("cmd5", cmd5Hash);   //lowfreq updates	
+	    String latency = updateMap.get(highfields[0]);
+		List<String> latencyList = Arrays.asList(latency.split("\\s*,\\s*"));
+		latencyList.add(latency);
+		updateMap.put(highfields[0], latencyList.toString()); //update high freq fields
+		String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+		updateMap.put("timestamp",timeStamp);
+		String newtimeStamp = updateMap.get("timestamp");
+		List<String> timeStampList = Arrays.asList(newtimeStamp.split("\\s*,\\s*"));
+		timeStampList.add(new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()));
+		updateMap.put("timestamp", timeStampList.toString());			
 				//parse the Json String into a Map, then query the entries.
 			//latency = updateMap.get(highfields[0]); lantencyList = convertList(latency); latencyList.append("current update"); updateMap.put(highfields[0], latencyList);
 			// timestamp = updateMap.get("timestamp"); timeList = convertList(timestamp); timeList.appenc(System.time()); updateMap.put("timestamp",timeList);
 			
-		try{	
+		try{				    
 				LDSyncAdapter.storeLD.put(controllerId, updates.toString());
 				logger.info("+++++++++++++ Retrieving from DB: CID:{}, Update:{}", 
 	                    new Object[] {
