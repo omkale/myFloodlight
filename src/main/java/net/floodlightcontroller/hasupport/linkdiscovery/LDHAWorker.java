@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.*;
 import org.slf4j.Logger;
@@ -43,11 +45,132 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	protected static IThreadPoolService threadPoolService;
 	private static final LDFilterQueue myLDFilterQueue = new LDFilterQueue(); 
 	
+	private final String[] fields = new String[]{"operation","src", "srcPort","dst","dstPort","latency","type"};
+	
 	public LDHAWorker(){};
 	
 	@Override
 	public JSONObject getJSONObject(String controllerId){
 		return new JSONObject();
+	}
+	
+	public void parseChunk(String chunk){
+		while(!chunk.equals("]]")){
+			// pre
+			if(chunk.startsWith("LDUpdate [")){
+				chunk = chunk.substring(10, chunk.length());
+			}
+			logger.info("\n[Assemble Update] Chunk pre: {}", new Object[] {chunk});
+			
+			//process keywords	
+			
+			// field: operation
+			if(chunk.startsWith("operation=")){
+				chunk = chunk.substring(10,chunk.length());
+				String op = chunk.split(",|]")[0];
+				logger.info("[Assemble Update] Operation=: {}", new Object[]{op});
+				chunk = chunk.substring(op.length(), chunk.length());
+			}
+			
+			if(chunk.startsWith(", ")){
+				chunk = chunk.substring(2, chunk.length());
+			}
+			
+			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
+			
+			// field: src
+			if(chunk.startsWith("src=")){
+				chunk = chunk.substring(4,chunk.length());
+				String src = chunk.split(",|]")[0];
+				logger.info("[Assemble Update] Src=: {}", new Object[]{src});
+				chunk = chunk.substring(src.length(), chunk.length());
+			}
+			
+			if(chunk.startsWith(", ")){
+				chunk = chunk.substring(2, chunk.length());
+			}
+			
+			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
+			
+			// field: srcPort
+			if(chunk.startsWith("srcPort=")){
+				chunk = chunk.substring(8,chunk.length());
+				String srcPort = chunk.split(",|]")[0];
+				logger.info("[Assemble Update] SrcPort=: {}", new Object[]{srcPort});
+				chunk = chunk.substring(srcPort.length(), chunk.length());
+			}
+			
+			if(chunk.startsWith(", ")){
+				chunk = chunk.substring(2, chunk.length());
+			}
+			
+			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
+			
+			// field: dst
+			if(chunk.startsWith("dst=")){
+				chunk = chunk.substring(4,chunk.length());
+				String dst = chunk.split(",|]")[0];
+				logger.info("[Assemble Update] Dst=: {}", new Object[]{dst});
+				chunk = chunk.substring(dst.length(), chunk.length());
+			}
+			
+			if(chunk.startsWith(", ")){
+				chunk = chunk.substring(2, chunk.length());
+			}
+			
+			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
+			
+			// field: dstPort
+			if(chunk.startsWith("dstPort=")){
+				chunk = chunk.substring(8,chunk.length());
+				String dstPort = chunk.split(",|]")[0];
+				logger.info("[Assemble Update] DstPort=: {}", new Object[]{dstPort});
+				chunk = chunk.substring(dstPort.length(), chunk.length());
+			}
+			
+			if(chunk.startsWith(", ")){
+				chunk = chunk.substring(2, chunk.length());
+			}
+			
+			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
+			
+			// field: latency
+			if(chunk.startsWith("latency=")){
+				chunk = chunk.substring(8,chunk.length());
+				String latency = chunk.split(",|]")[0];
+				logger.info("[Assemble Update] Latency=: {}", new Object[]{latency});
+				chunk = chunk.substring(latency.length(), chunk.length());
+			}
+			
+			if(chunk.startsWith(", ")){
+				chunk = chunk.substring(2, chunk.length());
+			}
+			
+			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
+			
+			// field: type
+			if(chunk.startsWith("type=")){
+				chunk = chunk.substring(5,chunk.length());
+				String type = chunk.split(",|]")[0];
+				logger.info("[Assemble Update] Type=: {}", new Object[]{type});
+				chunk = chunk.substring(type.length(), chunk.length());
+			}
+			
+			if(chunk.startsWith(", ")){
+				chunk = chunk.substring(2, chunk.length());
+			}
+			
+			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
+			
+			//post
+			if(chunk.startsWith("], ")){
+				chunk = chunk.substring(3, chunk.length());
+			}
+			logger.info("\n[Assemble Update] Chunk post: {}", new Object[] {chunk});
+		}
+		
+		return;
+		
 	}
  
 	/**
@@ -59,23 +182,24 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	@Override
 	public String assembleUpdate() {
 		// TODO Auto-generated method stub
-		JSONObject myJson = new JSONObject();
-		String jsonInString = null;
-		Integer i=0;	
-		for(String update : synLDUList){
-			ObjectMapper mapper = new ObjectMapper();
-			try {
-				jsonInString = mapper.writeValueAsString(update);
-			} catch (JsonProcessingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			String key = "field" + i.toString();
-			myJson.append(key, update);
-			i=i+1;
-		}		
-		logger.info("MyJson: "+myJson.toString());
-		return jsonInString;
+		StringBuilder jsonInString = new StringBuilder();
+		ObjectMapper mapper = new ObjectMapper();
+		JSONObject js = new JSONObject();
+		
+		String preprocess = new String (synLDUList.toString());
+		// Flatten the updates and strip off leading [
+		
+		if(preprocess.startsWith("[")){
+			preprocess = preprocess.substring(1, preprocess.length());
+		}
+		jsonInString.append(preprocess.toString());
+		
+		String chunk = new String(jsonInString.toString());
+		
+		parseChunk(chunk);
+		
+		logger.info("\n[Assemble Update] JSON String: {}", new Object[] {jsonInString});
+		return jsonInString.toString();
 	}
 
     /**
@@ -87,7 +211,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		// TODO Auto-generated method stub
 		try{
 			synchronized (synLDUList){
-				logger.info("Printing Update {}: ",new Object[]{synLDUList});
+				logger.info("Printing Updates {}: ",new Object[]{synLDUList});
 				myLDFilterQueue.enqueueForward(assembleUpdate());
 				synLDUList.clear();
 				TimeUnit.SECONDS.sleep(5);
