@@ -4,6 +4,7 @@ package net.floodlightcontroller.hasupport.linkdiscovery;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,8 +46,6 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	protected static IThreadPoolService threadPoolService;
 	private static final LDFilterQueue myLDFilterQueue = new LDFilterQueue(); 
 	
-	private final String[] fields = new String[]{"operation","src", "srcPort","dst","dstPort","latency","type"};
-	
 	public LDHAWorker(){};
 	
 	@Override
@@ -54,8 +53,22 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		return new JSONObject();
 	}
 	
-	public void parseChunk(String chunk){
+	public String parseChunk(String chunk){
+		
+		ObjectMapper mapper = new ObjectMapper();
+		Map<String,Object> newJson = new HashMap<String,Object>();
+		StringBuilder jsonInString = new StringBuilder();
+		
+		String op          = new String();
+		String src         = new String();
+		String srcPort     = new String();
+		String dst         = new String();
+		String dstPort     = new String();
+		String latency     = new String();
+		String type        = new String();
+		
 		while(!chunk.equals("]]")){
+			
 			// pre
 			if(chunk.startsWith("LDUpdate [")){
 				chunk = chunk.substring(10, chunk.length());
@@ -67,7 +80,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			// field: operation
 			if(chunk.startsWith("operation=")){
 				chunk = chunk.substring(10,chunk.length());
-				String op = chunk.split(",|]")[0];
+				op = chunk.split(",|]")[0];
 				logger.info("[Assemble Update] Operation=: {}", new Object[]{op});
 				chunk = chunk.substring(op.length(), chunk.length());
 			}
@@ -81,7 +94,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			// field: src
 			if(chunk.startsWith("src=")){
 				chunk = chunk.substring(4,chunk.length());
-				String src = chunk.split(",|]")[0];
+			    src = chunk.split(",|]")[0];
 				logger.info("[Assemble Update] Src=: {}", new Object[]{src});
 				chunk = chunk.substring(src.length(), chunk.length());
 			}
@@ -95,7 +108,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			// field: srcPort
 			if(chunk.startsWith("srcPort=")){
 				chunk = chunk.substring(8,chunk.length());
-				String srcPort = chunk.split(",|]")[0];
+				srcPort = chunk.split(",|]")[0];
 				logger.info("[Assemble Update] SrcPort=: {}", new Object[]{srcPort});
 				chunk = chunk.substring(srcPort.length(), chunk.length());
 			}
@@ -109,7 +122,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			// field: dst
 			if(chunk.startsWith("dst=")){
 				chunk = chunk.substring(4,chunk.length());
-				String dst = chunk.split(",|]")[0];
+				dst = chunk.split(",|]")[0];
 				logger.info("[Assemble Update] Dst=: {}", new Object[]{dst});
 				chunk = chunk.substring(dst.length(), chunk.length());
 			}
@@ -123,7 +136,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			// field: dstPort
 			if(chunk.startsWith("dstPort=")){
 				chunk = chunk.substring(8,chunk.length());
-				String dstPort = chunk.split(",|]")[0];
+				dstPort = chunk.split(",|]")[0];
 				logger.info("[Assemble Update] DstPort=: {}", new Object[]{dstPort});
 				chunk = chunk.substring(dstPort.length(), chunk.length());
 			}
@@ -137,7 +150,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			// field: latency
 			if(chunk.startsWith("latency=")){
 				chunk = chunk.substring(8,chunk.length());
-				String latency = chunk.split(",|]")[0];
+				latency = chunk.split(",|]")[0];
 				logger.info("[Assemble Update] Latency=: {}", new Object[]{latency});
 				chunk = chunk.substring(latency.length(), chunk.length());
 			}
@@ -151,7 +164,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			// field: type
 			if(chunk.startsWith("type=")){
 				chunk = chunk.substring(5,chunk.length());
-				String type = chunk.split(",|]")[0];
+				type = chunk.split(",|]")[0];
 				logger.info("[Assemble Update] Type=: {}", new Object[]{type});
 				chunk = chunk.substring(type.length(), chunk.length());
 			}
@@ -167,10 +180,41 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 				chunk = chunk.substring(3, chunk.length());
 			}
 			logger.info("\n[Assemble Update] Chunk post: {}", new Object[] {chunk});
+			
+			//TODO: Put it in a JSON.
+			if(! op.isEmpty() ){
+				newJson.put("operation", op);
+			}
+			if(! src.isEmpty() ){
+				newJson.put("src", src);
+			}
+			if(! srcPort.isEmpty() ){
+				newJson.put("srcPort", srcPort);
+			}
+			if(! dst.isEmpty() ){
+				newJson.put("dst", dst);
+			}
+			if(! dstPort.isEmpty() ){
+				newJson.put("dstPort", dstPort);
+			}
+			if(! latency.isEmpty() ){
+				newJson.put("latency", latency);
+			}
+			if(! type.isEmpty() ){
+				newJson.put("type", type);
+			}
+			
+			try {
+				jsonInString.append(mapper.writeValueAsString(newJson));
+				jsonInString.append(", ");
+			} catch (JsonProcessingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 		
-		return;
-		
+		return jsonInString.toString();
 	}
  
 	/**
@@ -182,9 +226,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	@Override
 	public String assembleUpdate() {
 		// TODO Auto-generated method stub
-		StringBuilder jsonInString = new StringBuilder();
-		ObjectMapper mapper = new ObjectMapper();
-		JSONObject js = new JSONObject();
+		String jsonInString = new String();
 		
 		String preprocess = new String (synLDUList.toString());
 		// Flatten the updates and strip off leading [
@@ -192,11 +234,10 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		if(preprocess.startsWith("[")){
 			preprocess = preprocess.substring(1, preprocess.length());
 		}
-		jsonInString.append(preprocess.toString());
 		
-		String chunk = new String(jsonInString.toString());
+		String chunk = new String(preprocess.toString());
 		
-		parseChunk(chunk);
+		jsonInString = parseChunk(chunk);
 		
 		logger.info("\n[Assemble Update] JSON String: {}", new Object[] {jsonInString});
 		return jsonInString.toString();
