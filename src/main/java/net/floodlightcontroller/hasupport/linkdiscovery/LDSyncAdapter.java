@@ -49,7 +49,7 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	private String controllerId;
 	private final String[] highfields = new String[]{"operation", "latency"};
 	private final String[] lowfields = new String[]{"src", "dst", "srcPort","dstPort","type"};
-	private String cmd5;
+	private String cmd5 = new String();
 	
 	
 	public LDSyncAdapter(){
@@ -77,18 +77,10 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 		// updateMap.put("cmd5",hash(md5values))
 		// hash(...) -> means that take md5 hash of "..." and make that the string.
 		try {
-			MessageDigest m = MessageDigest.getInstance("MD5");
-			m.reset();
-			m.update(updates.getBytes()); //use md5values instead of updates.
-			byte[] digest = m.digest();
-			BigInteger bigInt = new BigInteger(1,digest);
-			cmd5 = bigInt.toString(16);
+			MD5Hash myCMD5 = new MD5Hash();
+			cmd5 = myCMD5.calculateMD5Hash(updates);
 			logger.info("[cmd5Hash] The MD5: {} The Value {}", new Object [] {cmd5,updates}); //use md5values instead of updates.	
-	
 		} 
-		catch (java.security.NoSuchAlgorithmException e1) {
-            e1.printStackTrace();
-        }
 		catch (Exception e){
 			logger.info("[cmd5Hash] Exception: enqueueFwd!");
 			e.printStackTrace();

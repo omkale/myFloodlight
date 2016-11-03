@@ -23,7 +23,7 @@ public class LDFilterQueue implements IFilterQueue {
 	
 	LinkedBlockingQueue<String> filterQueue = new LinkedBlockingQueue<>();
 	HashMap<String, String> myMap = new HashMap<String, String>();
-	
+	private String newMD5 = new String();
     
 	
 	
@@ -35,25 +35,17 @@ public class LDFilterQueue implements IFilterQueue {
 	
 	@Override
 	public boolean enqueueForward(String value) {
-		try {
-			MessageDigest m = MessageDigest.getInstance("MD5");
-			m.reset();
-			m.update(value.getBytes());
-			byte[] digest = m.digest();
-			BigInteger bigInt = new BigInteger(1,digest);
-			String md5 = bigInt.toString(16);
-			logger.info("[FilterQ] The MD5: {} The Value {}", new Object [] {md5,value});
-			if( (!myMap.containsKey(md5)) && (!value.equals(null)) ){
+		try {		
+			MD5Hash myMD5 = new MD5Hash();
+			newMD5 = myMD5.calculateMD5Hash(value);
+			logger.info("[FilterQ] The MD5: {} The Value {}", new Object [] {newMD5,value});
+			if( (!myMap.containsKey(newMD5)) && (!value.equals(null)) ){
 				filterQueue.offer(value);
-				myMap.put(md5, value);
+				myMap.put(newMD5, value);
 			}
 			return true;
 	
 		} 
-		catch (java.security.NoSuchAlgorithmException e1) {
-            e1.printStackTrace();
-            return false;
-        }
 		catch (Exception e){
 			logger.info("[FilterQ] Exception: enqueueFwd!");
 			e.printStackTrace();
