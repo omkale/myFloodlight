@@ -1,8 +1,5 @@
 package net.floodlightcontroller.hasupport.linkdiscovery;
 
-
-import java.math.BigInteger;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -64,10 +61,10 @@ public class LDFilterQueue implements IFilterQueue {
 		// TODO Auto-generated method stub
 		try {
 			ArrayList<String> LDupds = new ArrayList<String>();
-			if( !filterQueue.isEmpty() ){
+			if(! filterQueue.isEmpty() ) {
 				filterQueue.drainTo(LDupds);
 			}
-			if( !LDupds.isEmpty() ){
+			if(! LDupds.isEmpty() ) {
 				logger.info("[FilterQ] The update after drain: {} ", new Object [] {LDupds.toString()});
 				syncAdapter.packJSON(LDupds);
 				return true;

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,11 +54,11 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		return new JSONObject();
 	}
 	
-	public String parseChunk(String chunk){
+	public List<String> parseChunk(String chunk){
 		
 		ObjectMapper mapper = new ObjectMapper();
 		Map<String,Object> newJson = new HashMap<String,Object>();
-		StringBuilder jsonInString = new StringBuilder();
+		List<String> jsonInString = new LinkedList<String>();
 		
 		String op          = new String();
 		String src         = new String();
@@ -205,8 +206,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			}
 			
 			try {
-				jsonInString.append(mapper.writeValueAsString(newJson));
-				jsonInString.append(", ");
+				jsonInString.add(mapper.writeValueAsString(newJson));
 			} catch (JsonProcessingException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -214,7 +214,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			
 		}
 		
-		return jsonInString.toString();
+		return jsonInString;
 	}
  
 	/**
@@ -224,9 +224,9 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	 */
 	
 	@Override
-	public String assembleUpdate() {
+	public List<String> assembleUpdate() {
 		// TODO Auto-generated method stub
-		String jsonInString = new String();
+		List<String> jsonInString = new LinkedList<String>();
 		
 		String preprocess = new String (synLDUList.toString());
 		// Flatten the updates and strip off leading [
@@ -237,10 +237,12 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		
 		String chunk = new String(preprocess.toString());
 		
-		jsonInString = parseChunk(chunk);
-		
+		if(! preprocess.startsWith("]") ) {
+			jsonInString = parseChunk(chunk);
+		}
+
 		logger.info("\n[Assemble Update] JSON String: {}", new Object[] {jsonInString});
-		return jsonInString.toString();
+		return jsonInString;
 	}
 
     /**
@@ -253,7 +255,10 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		try{
 			synchronized (synLDUList){
 				logger.info("Printing Updates {}: ",new Object[]{synLDUList});
-				myLDFilterQueue.enqueueForward(assembleUpdate());
+				List<String> updates = assembleUpdate();
+				for(String update : updates){
+					myLDFilterQueue.enqueueForward(update);
+				}
 				synLDUList.clear();
 				TimeUnit.SECONDS.sleep(5);
 				myLDFilterQueue.dequeueForward();

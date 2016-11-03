@@ -1,9 +1,6 @@
 package net.floodlightcontroller.hasupport.linkdiscovery;
 
 import java.io.IOException;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,44 +39,46 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	protected static ISyncService syncService;
 	protected static IStoreClient<String, String> storeLD;
 	protected static IFloodlightProviderService floodlightProvider;
-	HashMap<String, String> lowFreqUpdate = new HashMap<String, String>();
-	Map<String, String> updateMap = new HashMap<String, String>();
-	Map<String, String> newUpdateMap = new HashMap<String, String>();
 	
 	private String controllerId;
 	private final String[] highfields = new String[]{"operation", "latency"};
-	private final String[] lowfields = new String[]{"src", "dst", "srcPort","dstPort","type"};
-	private String cmd5 = new String();
+	private final String[] lowfields = new String[]{"src", "srcPort", "dst","dstPort","type"};
+
+	ObjectMapper myObj = new ObjectMapper();
+	Map<String, String> newUpdateMap = new HashMap<String, String>();
+	Map<String, String> updateMap = new HashMap<String, String>();
+	String cmd5Hash = new String();
 	
 	
 	public LDSyncAdapter(){
 		
 	}
 	
-	public String getCMD5Hash(String updates) {				
-//		ArrayList<String> cmd5fields = new ArrayList<String>();
+	public String getCMD5Hash(String update, Map<String, String> newUpdateMap) {				
+		ArrayList<String> cmd5fields = new ArrayList<String>(); 
+		String cmd5 = new String();
 		//check map for low freq updates
-//		for (String lf: lowfields){
-//			if (newUpdateMap.containsKey(lf)){
-//				cmd5fields.add(newUpdateMap.get(lf));
-//			}
-//		}
-//		
-//		//cmd5fields will contain all low freq field values; take md5 hash of all values together.
-//		StringBuilder md5valuesb = new StringBuilder();
-//		for (String t: cmd5fields){
-//			md5valuesb.append(t);
-//		}
-//		String md5values = new String();
-//		md5values = md5valuesb.toString();
+		for (String lf: lowfields){
+			if (newUpdateMap.containsKey(lf)){
+				cmd5fields.add(newUpdateMap.get(lf));
+			}
+		}
+		
+		//cmd5fields will contain all low freq field values; take md5 hash of all values together.
+		StringBuilder md5valuesb = new StringBuilder();
+		for (String t: cmd5fields){
+			md5valuesb.append(t);
+		}
+		String md5values = new String();
+		md5values = md5valuesb.toString();
 		
 		//take md5 hash of 'md5values' and that will be your cmd5
 		// updateMap.put("cmd5",hash(md5values))
 		// hash(...) -> means that take md5 hash of "..." and make that the string.
 		try {
 			MD5Hash myCMD5 = new MD5Hash();
-			cmd5 = myCMD5.calculateMD5Hash(updates);
-			logger.info("[cmd5Hash] The MD5: {} The Value {}", new Object [] {cmd5,updates}); //use md5values instead of updates.	
+			cmd5 = myCMD5.calculateMD5Hash(md5values);
+			logger.info("[cmd5Hash] The MD5: {} The Value {}", new Object [] {cmd5,md5values.toString()}); //use md5values instead of updates.	
 		} 
 		catch (Exception e){
 			logger.info("[cmd5Hash] Exception: enqueueFwd!");
@@ -91,76 +90,90 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	
 	@Override
 	public void packJSON(List<String> newUpdates) {
-		ObjectMapper myObj = new ObjectMapper();
+
 		
 		//TODO: Two cases for when newUpdate cmd5 = oldUpdate cmd5 and when not.
 		
-		String cmd5Hash = new String();
 		
-		//Get previous update:
-		try {
-			
-			cmd5Hash = getCMD5Hash(newUpdates.get(0).toString());
-			
-			newUpdateMap = (Map<String, String>)(myObj.readValue(newUpdates.toString(), Map.class));
-			
-        	String oldUpdates = storeLD.get(cmd5Hash).getValue();
-			logger.info("+++++++++++++ Retriving old update from DB: Key:{}, Value:{} ", 
-                    new Object[] {
-                            cmd5Hash.toString(), 
-                            oldUpdates.toString()
-                        }
-                    );
-			////parse the Json String into a Map, then query the entries.
-			
-			updateMap = (Map<String, String>)(myObj.readValue(oldUpdates.toString(), Map.class));
-		
-		//latency = updateMap.get(highfields[0]); lantencyList = convertList(latency); latencyList.append("current update"); updateMap.put(highfields[0], latencyList);
-		// timestamp = updateMap.get("timestamp"); timeList = convertList(timestamp); timeList.appenc(System.time()); updateMap.put("timestamp",timeList);
-		
-		updateMap.put("cmd5", cmd5Hash);   //lowfreq updates
-		
-	    String oldLatency = updateMap.get(highfields[0]);
-		List<String> latencyList = Arrays.asList(oldLatency.split("\\s*,\\s*"));
-		latencyList.add( newUpdateMap.get(highfields[0]) );
-		updateMap.put(highfields[0], latencyList.toString()); //update high freq fields
-		
-		
-		String timestamp = updateMap.get("timestamp");
-		List<String> timeStampList = Arrays.asList(timestamp.split("\\s*,\\s*"));
-		Long ts = new Long(Instant.now().getEpochSecond());
-		timeStampList.add(ts.toString());
-		updateMap.put("timestamp", timeStampList.toString());
-		
-		} catch (JsonParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JsonMappingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (SyncException e) {
-            e.printStackTrace();
-        }
+			for (String up: newUpdates) {
+				try {
+				newUpdateMap = (Map<String, String>) (myObj.readValue(up.toString(), Map.class));
+				cmd5Hash = getCMD5Hash(up,newUpdateMap);
 				
-		try{				    
-			LDSyncAdapter.storeLD.put(cmd5Hash, updateMap.toString());
-			logger.info("+++++++++++++ Retrieving from DB: CID:{}, Update:{}", 
-                    new Object[] {
-                            controllerId,
-                            updateMap.toString()
-                        });
-			
-		} catch (SyncException se) {
-			// TODO Auto-generated catch block
-			logger.info("[LDSync] Exception: sync packJSON!");
-			se.printStackTrace();
-		} catch (Exception e) {
-			logger.info("[LDSync] Exception: packJSON!");
-			e.printStackTrace();
+				// Try to get previous update:
+				
+	        	String oldUpdates = storeLD.get(cmd5Hash).getValue();
+				
+	        	if (! oldUpdates.equals(null) ){
+		        	logger.info("+++++++++++++ Retriving old update from DB: Key:{}, Value:{} ", 
+		                    new Object[] {
+		                            cmd5Hash.toString(), 
+		                            oldUpdates.toString()
+		                        }
+		                    );
+				
+				
+					//parse the Json String into a Map, then query the entries.
+					
+					updateMap = (Map<String, String>)(myObj.readValue(oldUpdates.toString(), Map.class));
+				
+					//latency = updateMap.get(highfields[0]); lantencyList = convertList(latency); latencyList.append("current update"); updateMap.put(highfields[0], latencyList);
+					// timestamp = updateMap.get("timestamp"); timeList = convertList(timestamp); timeList.appenc(System.time()); updateMap.put("timestamp",timeList);
+				
+					updateMap.put("cmd5", cmd5Hash);   //lowfreq updates
+					
+				    String oldLatency = updateMap.get(highfields[0]);
+					List<String> latencyList = Arrays.asList(oldLatency.split("\\s*,\\s*"));
+					latencyList.add( newUpdateMap.get(highfields[0]) );
+					updateMap.put(highfields[0], latencyList.toString()); //update high freq fields
+					
+					
+					String timestamp = updateMap.get("timestamp");
+					List<String> timeStampList = Arrays.asList(timestamp.split("\\s*,\\s*"));
+					Long ts = new Long(Instant.now().getEpochSecond());
+					timeStampList.add(ts.toString());
+					updateMap.put("timestamp", timeStampList.toString());
+	        	}
+		
+	//		} catch (JsonParseException e) {
+	//			// TODO Auto-generated catch block
+	//			e.printStackTrace();
+	//		} catch (JsonMappingException e) {
+	//			// TODO Auto-generated catch block
+	//			e.printStackTrace();
+	//		} catch (IOException e) {
+	//			// TODO Auto-generated catch block
+	//			e.printStackTrace();
+			} catch (Exception e) {
+	            e.printStackTrace();
+	        }
 		}
+				
+//		try{
+//			if( updateMap.isEmpty() || updateMap.equals(null) ){
+//				LDSyncAdapter.storeLD.put(cmd5Hash, newUpdateMap.toString());
+//				logger.info("+++++++++++++ Retrieving from DB: CID:{}, Update:{}", 
+//	                    new Object[] {
+//	                            controllerId,
+//	                            updateMap.toString()
+//	                        });
+//			}
+//			
+//			LDSyncAdapter.storeLD.put(cmd5Hash, updateMap.toString());
+//			logger.info("+++++++++++++ Retrieving from DB: CID:{}, Update:{}", 
+//                    new Object[] {
+//                            controllerId,
+//                            updateMap.toString()
+//                        });
+//			
+//		} catch (SyncException se) {
+//			// TODO Auto-generated catch block
+//			logger.info("[LDSync] Exception: sync packJSON!");
+//			se.printStackTrace();
+//		} catch (Exception e) {
+//			logger.info("[LDSync] Exception: packJSON!");
+//			e.printStackTrace();
+//		}
 		
 	}
 
