@@ -53,169 +53,6 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	public JSONObject getJSONObject(String controllerId){
 		return new JSONObject();
 	}
-	
-	public List<String> parseChunk(String chunk){
-		
-		ObjectMapper mapper = new ObjectMapper();
-		Map<String,Object> newJson = new HashMap<String,Object>();
-		List<String> jsonInString = new LinkedList<String>();
-		
-		String op          = new String();
-		String src         = new String();
-		String srcPort     = new String();
-		String dst         = new String();
-		String dstPort     = new String();
-		String latency     = new String();
-		String type        = new String();
-		
-		while(!chunk.equals("]]")){
-			
-			// pre
-			if(chunk.startsWith("LDUpdate [")){
-				chunk = chunk.substring(10, chunk.length());
-			}
-			logger.info("\n[Assemble Update] Chunk pre: {}", new Object[] {chunk});
-			
-			//process keywords	
-			
-			// field: operation
-			if(chunk.startsWith("operation=")){
-				chunk = chunk.substring(10,chunk.length());
-				op = chunk.split(",|]")[0];
-				logger.info("[Assemble Update] Operation=: {}", new Object[]{op});
-				chunk = chunk.substring(op.length(), chunk.length());
-			}
-			
-			if(chunk.startsWith(", ")){
-				chunk = chunk.substring(2, chunk.length());
-			}
-			
-			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
-			
-			// field: src
-			if(chunk.startsWith("src=")){
-				chunk = chunk.substring(4,chunk.length());
-			    src = chunk.split(",|]")[0];
-				logger.info("[Assemble Update] Src=: {}", new Object[]{src});
-				chunk = chunk.substring(src.length(), chunk.length());
-			}
-			
-			if(chunk.startsWith(", ")){
-				chunk = chunk.substring(2, chunk.length());
-			}
-			
-			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
-			
-			// field: srcPort
-			if(chunk.startsWith("srcPort=")){
-				chunk = chunk.substring(8,chunk.length());
-				srcPort = chunk.split(",|]")[0];
-				logger.info("[Assemble Update] SrcPort=: {}", new Object[]{srcPort});
-				chunk = chunk.substring(srcPort.length(), chunk.length());
-			}
-			
-			if(chunk.startsWith(", ")){
-				chunk = chunk.substring(2, chunk.length());
-			}
-			
-			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
-			
-			// field: dst
-			if(chunk.startsWith("dst=")){
-				chunk = chunk.substring(4,chunk.length());
-				dst = chunk.split(",|]")[0];
-				logger.info("[Assemble Update] Dst=: {}", new Object[]{dst});
-				chunk = chunk.substring(dst.length(), chunk.length());
-			}
-			
-			if(chunk.startsWith(", ")){
-				chunk = chunk.substring(2, chunk.length());
-			}
-			
-			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
-			
-			// field: dstPort
-			if(chunk.startsWith("dstPort=")){
-				chunk = chunk.substring(8,chunk.length());
-				dstPort = chunk.split(",|]")[0];
-				logger.info("[Assemble Update] DstPort=: {}", new Object[]{dstPort});
-				chunk = chunk.substring(dstPort.length(), chunk.length());
-			}
-			
-			if(chunk.startsWith(", ")){
-				chunk = chunk.substring(2, chunk.length());
-			}
-			
-			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
-			
-			// field: latency
-			if(chunk.startsWith("latency=")){
-				chunk = chunk.substring(8,chunk.length());
-				latency = chunk.split(",|]")[0];
-				logger.info("[Assemble Update] Latency=: {}", new Object[]{latency});
-				chunk = chunk.substring(latency.length(), chunk.length());
-			}
-			
-			if(chunk.startsWith(", ")){
-				chunk = chunk.substring(2, chunk.length());
-			}
-			
-			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
-			
-			// field: type
-			if(chunk.startsWith("type=")){
-				chunk = chunk.substring(5,chunk.length());
-				type = chunk.split(",|]")[0];
-				logger.info("[Assemble Update] Type=: {}", new Object[]{type});
-				chunk = chunk.substring(type.length(), chunk.length());
-			}
-			
-			if(chunk.startsWith(", ")){
-				chunk = chunk.substring(2, chunk.length());
-			}
-			
-			logger.info("\n[Assemble Update] Chunk keywords: {}", new Object[] {chunk});
-			
-			//post
-			if(chunk.startsWith("], ")){
-				chunk = chunk.substring(3, chunk.length());
-			}
-			logger.info("\n[Assemble Update] Chunk post: {}", new Object[] {chunk});
-			
-			//TODO: Put it in a JSON.
-			if(! op.isEmpty() ){
-				newJson.put("operation", op);
-			}
-			if(! src.isEmpty() ){
-				newJson.put("src", src);
-			}
-			if(! srcPort.isEmpty() ){
-				newJson.put("srcPort", srcPort);
-			}
-			if(! dst.isEmpty() ){
-				newJson.put("dst", dst);
-			}
-			if(! dstPort.isEmpty() ){
-				newJson.put("dstPort", dstPort);
-			}
-			if(! latency.isEmpty() ){
-				newJson.put("latency", latency);
-			}
-			if(! type.isEmpty() ){
-				newJson.put("type", type);
-			}
-			
-			try {
-				jsonInString.add(mapper.writeValueAsString(newJson));
-			} catch (JsonProcessingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		}
-		
-		return jsonInString;
-	}
  
 	/**
 	 * This function is used to assemble the LDupdates into
@@ -227,6 +64,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	public List<String> assembleUpdate() {
 		// TODO Auto-generated method stub
 		List<String> jsonInString = new LinkedList<String>();
+		LDHAUtils parser = new LDHAUtils();
 		
 		String preprocess = new String (synLDUList.toString());
 		// Flatten the updates and strip off leading [
@@ -238,7 +76,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 		String chunk = new String(preprocess.toString());
 		
 		if(! preprocess.startsWith("]") ) {
-			jsonInString = parseChunk(chunk);
+			jsonInString = parser.parseChunk(chunk);
 		}
 
 		logger.info("\n[Assemble Update] JSON String: {}", new Object[] {jsonInString});

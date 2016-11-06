@@ -33,7 +33,7 @@ public class LDFilterQueue implements IFilterQueue {
 	@Override
 	public boolean enqueueForward(String value) {
 		try {		
-			MD5Hash myMD5 = new MD5Hash();
+			LDHAUtils myMD5 = new LDHAUtils();
 			newMD5 = myMD5.calculateMD5Hash(value);
 			logger.info("[FilterQ] The MD5: {} The Value {}", new Object [] {newMD5,value});
 			if( (!myMap.containsKey(newMD5)) && (!value.equals(null)) ){

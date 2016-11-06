@@ -36,6 +36,7 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	protected static IFloodlightProviderService floodlightProvider;
 	
 	private String controllerId;
+	private final String none = new String("none");
 	private final String[] highfields = new String[]{"operation",  "latency", "timestamp"};
 	private final String[] lowfields = new String[]{"src", "srcPort", "dst","dstPort","type"};
 
@@ -47,7 +48,7 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	
 	
 	public LDSyncAdapter(){
-		
+		this.controllerId  = new String("C1");
 	}
 	
 	public String getCMD5Hash(String update, Map<String, String> newUpdateMap) {				
@@ -72,7 +73,7 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 		// hash(...) -> means that take md5 hash of "..." 
 		
 		try {
-			MD5Hash myCMD5 = new MD5Hash();
+			LDHAUtils myCMD5 = new LDHAUtils();
 			cmd5 = myCMD5.calculateMD5Hash(md5values);
 			logger.info("[cmd5Hash] The MD5: {} The Value {}", new Object [] {cmd5,md5values.toString()}); //use md5values instead of updates.	
 		} 
@@ -119,9 +120,9 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 				newUpdateMap.put(highfields[2], ts.toString()+nano.toString());
 				
 				// Try to get previous update:
-	        	String oldUpdates = storeLD.get(cmd5Hash.toString()).getValue();
+	        	String oldUpdates = storeLD.getValue(cmd5Hash.toString(), none);
 				
-	        	if ( oldUpdates != null ) {
+	        	if (! oldUpdates.equals(none) ) {
 	        		
 	        		if(oldUpdates.isEmpty()){
 	        			continue;
@@ -161,7 +162,19 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	        		try{
 	        				
 	        			LDSyncAdapter.storeLD.put(cmd5Hash.toString(), myMapper.writeValueAsString(newUpdateMap));
-	    				
+	        			
+	        			String collatedcmd5 = LDSyncAdapter.storeLD.getValue(controllerId.toString(), none);
+	        			
+	        			if ( collatedcmd5.equals(none) ) {
+	        				collatedcmd5 = cmd5Hash;
+	        				logger.info("Collated CMD5: {} ", new Object [] {collatedcmd5.toString()});
+	        			} else {
+	        				logger.info("================ Append update to HashMap ================");
+	        				collatedcmd5 = appendUpdate(collatedcmd5, cmd5Hash);
+	        			}
+	        			
+	        			LDSyncAdapter.storeLD.put(controllerId, collatedcmd5);
+	        			
 	        		} catch (SyncException se) {
 	        			// TODO Auto-generated catch block
 	        			logger.info("[LDSync] Exception: sync packJSON!");
@@ -242,7 +255,6 @@ public class LDSyncAdapter implements ISyncAdapter, IFloodlightModule, IStoreLis
 	        String k = keys.next();
 	        try {
 	        	String val = storeLD.get(k).getValue();
-	            //JSONObject val = new JSONObject(serzVal);
 				logger.info("+++++++++++++ Retriving value from DB: Key:{}, Value:{}, Type: {}", 
 	                    new Object[] {
 	                            k.toString(), 
