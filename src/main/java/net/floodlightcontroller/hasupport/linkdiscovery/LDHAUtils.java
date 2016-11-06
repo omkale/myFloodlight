@@ -3,6 +3,7 @@ package net.floodlightcontroller.hasupport.linkdiscovery;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -16,6 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class LDHAUtils {
 	protected static Logger logger = LoggerFactory.getLogger(LDHAUtils.class);
+	private final String[] highfields = new String[]{"operation",  "latency", "timestamp"};
+	private final String[] lowfields = new String[]{"src", "srcPort", "dst","dstPort","type"};
 	
 	public List<String> parseChunk(String chunk){
 		
@@ -198,6 +201,51 @@ public class LDHAUtils {
 			e.printStackTrace();
 		}
 		return md5;	
+	}
+	
+	public String getCMD5Hash(String update, Map<String, String> newUpdateMap) {				
+		ArrayList<String> cmd5fields = new ArrayList<String>(); 
+		String cmd5 = new String();
+		//check map for low freq updates
+		for (String lf: lowfields){
+			if (newUpdateMap.containsKey(lf)){
+				cmd5fields.add(newUpdateMap.get(lf));
+			}
+		}
+		
+		//cmd5fields will contain all low freq field values; take md5 hash of all values together.
+		StringBuilder md5valuesb = new StringBuilder();
+		for (String t: cmd5fields){
+			md5valuesb.append(t);
+		}
+		String md5values = new String();
+		md5values = md5valuesb.toString();
+		
+		// updateMap.put("cmd5",hash(md5values))
+		// hash(...) -> means that take md5 hash of "..." 
+		
+		try {
+			LDHAUtils myCMD5 = new LDHAUtils();
+			cmd5 = myCMD5.calculateMD5Hash(md5values);
+			logger.info("[cmd5Hash] The MD5: {} The Value {}", new Object [] {cmd5,md5values.toString()}); //use md5values instead of updates.	
+		} 
+		catch (Exception e){
+			logger.info("[cmd5Hash] Exception: enqueueFwd!");
+			e.printStackTrace();
+		}
+		return cmd5;
+	}
+	
+	public String appendUpdate(String oldUpdate, String newUpdate) {
+		
+		StringBuilder updated = new StringBuilder();
+		
+		updated.append(oldUpdate);
+		updated.append(", ");
+		updated.append(newUpdate);
+	
+		return updated.toString();
+	
 	}
 
 }

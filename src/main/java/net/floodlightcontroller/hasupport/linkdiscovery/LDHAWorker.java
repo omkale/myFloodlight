@@ -4,21 +4,14 @@ package net.floodlightcontroller.hasupport.linkdiscovery;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.json.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.module.FloodlightModuleContext;
@@ -37,7 +30,7 @@ import net.floodlightcontroller.threadpool.IThreadPoolService;
  * @author Om Kale
  *
  */
-public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightModule, ILinkDiscoveryListener {
+public class LDHAWorker implements IHAWorker, IFloodlightModule, ILinkDiscoveryListener {
 	protected static Logger logger = LoggerFactory.getLogger(LDHAWorker.class);
 	protected static ILinkDiscoveryService linkserv;
 	protected static IFloodlightProviderService floodlightProvider;
@@ -49,11 +42,6 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	
 	public LDHAWorker(){};
 	
-	@Override
-	public JSONObject getJSONObject(String controllerId){
-		return new JSONObject();
-	}
- 
 	/**
 	 * This function is used to assemble the LDupdates into
 	 * a JSON string using JSON Jackson API
@@ -98,7 +86,6 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 					myLDFilterQueue.enqueueForward(update);
 				}
 				synLDUList.clear();
-				TimeUnit.SECONDS.sleep(5);
 				myLDFilterQueue.dequeueForward();
 			}
 			return true;
@@ -113,26 +100,6 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 	public boolean subscribeHook(String controllerID) {
 		// TODO Auto-generated method stub
 		return false;
-	}
-	
-	/**
-	 * This function is called by external users to getUpdates 
-	 */
-	@Override
-	public JSONObject getUpdates() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-    /**
-     * This function is called by external users to push JSON strings
-     * into the syncDB
-     */
-	@Override
-	public void pushUpdates(String update) {
-		// TODO Auto-generated method stub
-		
-		
 	}
 
 	@Override
@@ -190,6 +157,7 @@ public class LDHAWorker implements IHAWorker, ILDHAWorkerService, IFloodlightMod
 			public void run() {
 				try {
 					publishHook();
+					subscribeHook(new String("C1"));
 				} catch (Exception e) {
 					logger.info("Exception in LDWorker.", e);
 				} finally {
