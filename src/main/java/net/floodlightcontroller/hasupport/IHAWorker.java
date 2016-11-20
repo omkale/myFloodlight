@@ -16,7 +16,5 @@ public interface IHAWorker extends IFloodlightModule {
 	public boolean publishHook();
 	
 	public boolean subscribeHook(String controllerID);
-	
-	
 
 }
