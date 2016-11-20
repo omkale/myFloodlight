@@ -1,6 +1,5 @@
 package net.floodlightcontroller.hasupport;
 
-import org.json.JSONObject;
 
 /**
  * Maintain a queue to filter out duplicates before pulling 

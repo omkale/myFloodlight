@@ -1,7 +1,6 @@
 package net.floodlightcontroller.hasupport;
 
 import java.util.List;
-import org.json.*;
 
 public interface ISyncAdapter {
 	
